@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบคลังรถยนต์ - ตารางตรงตาม Google Sheet</title>
+  <title>นายหน้าส่วนตัว น๊อป Carbutler</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -12,21 +12,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Prompt', sans-serif; }
-    th, td { whitespace: nowrap; }
+    th, td { white-space: nowrap; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-  <!-- Header Bar -->
   <header class="bg-blue-900 text-white shadow-md sticky top-0 z-30">
     <div class="max-w-[98%] mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="bg-blue-800 p-2 rounded-lg border border-blue-700">
-          <i data-lucide="car" class="w-6 h-6 text-blue-200"></i>
+        <div class="w-10 h-10 rounded-full overflow-hidden border border-blue-600 bg-white flex items-center justify-center">
+          <img src="https://i.ibb.co/wrgzFF2P/Screenshot-2026-10-04-001741.png" alt="Logo" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/40x40/1e3a8a/ffffff?text=Car'">
         </div>
         <div>
-          <h1 class="font-bold text-lg leading-tight">AutoStatus Fleet Tracker</h1>
-          <p class="text-xs text-blue-200">แสดงผลคอลัมน์ตรงตาม Google Sheet (G - U)</p>
+          <h1 class="font-bold text-lg leading-tight">นายหน้าส่วนตัว น๊อป Carbutler</h1>
+          <p class="text-xs text-blue-200"><</p>
         </div>
       </div>
       <div class="flex items-center space-x-3">
@@ -38,49 +37,72 @@
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="flex-1 max-w-[98%] w-full mx-auto px-2 sm:px-4 py-4 space-y-4">
 
-    <!-- Search Bar & Stats -->
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-      <div class="relative w-full md:w-96">
-        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input 
-          type="text" 
-          id="searchInput" 
-          oninput="handleSearch()" 
-          placeholder="ค้นหาข้อมูลทุกคอลัมน์..." 
-          class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-        >
+    <!-- Control Panel & Filters -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+      <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <!-- Search Bar -->
+        <div class="relative w-full md:w-80">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            oninput="handleFilter()" 
+            placeholder="ค้นหาคำทั่วไป..." 
+            class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+          >
+        </div>
+
+        <!-- Extra Filters: Mileage & Status -->
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <select id="statusFilter" onchange="handleFilter()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600">
+            <option value="">สถานะทั้งหมด</option>
+            <option value="วางขาย">วางขาย</option>
+            <option value="จอง">จอง</option>
+          </select>
+
+          <select id="maxMileageFilter" onchange="handleFilter()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600">
+            <option value="">ไมล์สูงสุดทั้งหมด</option>
+            <option value="50000">ไมล์ไม่เกิน 50,000 กม.</option>
+            <option value="100000">ไมล์ไม่เกิน 100,000 กม.</option>
+            <option value="150000">ไมล์ไม่เกิน 150,000 กม.</option>
+          </select>
+
+          <button onclick="toggleColumnModal()" class="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-medium transition border border-slate-200">
+            <i data-lucide="columns" class="w-4 h-4"></i>
+            <span>ซ่อน/แสดงคอลัมน์</span>
+          </button>
+        </div>
       </div>
-      <div class="flex items-center space-x-4 text-xs font-medium text-slate-600">
-        <span>จำนวนทั้งหมด: <strong class="text-blue-900 text-sm" id="totalCount">0</strong> คัน</span>
-        <span>|</span>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs font-medium text-slate-600">
+        <span>จำนวนที่แสดง: <strong class="text-blue-900 text-sm" id="totalCount">0</strong> คัน</span>
         <span id="lastUpdated">อัปเดตล่าสุด: -</span>
       </div>
     </div>
 
-    <!-- Table Container -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-blue-900 text-white font-semibold border-b border-blue-950">
-              <th class="py-3 px-3 border-r border-blue-800">Location</th>
-              <th class="py-3 px-3 border-r border-blue-800">วันซื้อเข้า</th>
-              <th class="py-3 px-3 border-r border-blue-800">ยี่ห้อ</th>
-              <th class="py-3 px-3 border-r border-blue-800">รุ่น</th>
-              <th class="py-3 px-3 border-r border-blue-800">รุ่นย่อย</th>
-              <th class="py-3 px-3 border-r border-blue-800">สี</th>
-              <th class="py-3 px-3 border-r border-blue-800">ทะเบียน</th>
-              <th class="py-3 px-3 border-r border-blue-800">ทะเบียนขาย</th>
-              <th class="py-3 px-3 border-r border-blue-800">เครื่องยนต์</th>
-              <th class="py-3 px-3 border-r border-blue-800">ปีผลิต</th>
-              <th class="py-3 px-3 border-r border-blue-800">ปีจด</th>
-              <th class="py-3 px-3 border-r border-blue-800">ไมล์</th>
-              <th class="py-3 px-3 border-r border-blue-800">ประวัติรถ</th>
-              <th class="py-3 px-3 border-r border-blue-800">สถานะ</th>
-              <th class="py-3 px-3">การรับประกัน</th>
+              <th data-col="0" class="py-3 px-3 border-r border-blue-800 text-center w-12">ลำดับ</th>
+              <th data-col="1" class="py-3 px-3 border-r border-blue-800">Location</th>
+              <th data-col="2" class="py-3 px-3 border-r border-blue-800">วันซื้อเข้า</th>
+              <th data-col="3" class="py-3 px-3 border-r border-blue-800">ยี่ห้อ</th>
+              <th data-col="4" class="py-3 px-3 border-r border-blue-800">รุ่น</th>
+              <th data-col="5" class="py-3 px-3 border-r border-blue-800">รุ่นย่อย</th>
+              <th data-col="6" class="py-3 px-3 border-r border-blue-800">สี</th>
+              <th data-col="7" class="py-3 px-3 border-r border-blue-800">ทะเบียน</th>
+              <th data-col="8" class="py-3 px-3 border-r border-blue-800">ทะเบียนขาย</th>
+              <th data-col="9" class="py-3 px-3 border-r border-blue-800">เครื่องยนต์</th>
+              <th data-col="10" class="py-3 px-3 border-r border-blue-800">ปีผลิต</th>
+              <th data-col="11" class="py-3 px-3 border-r border-blue-800">ปีจด</th>
+              <th data-col="12" class="py-3 px-3 border-r border-blue-800">ไมล์</th>
+              <th data-col="13" class="py-3 px-3 border-r border-blue-800">ประวัติรถ</th>
+              <th data-col="14" class="py-3 px-3 border-r border-blue-800">สถานะ</th>
+              <th data-col="15" class="py-3 px-3">การรับประกัน</th>
             </tr>
           </thead>
           <tbody id="tableBody" class="divide-y divide-slate-100">
@@ -89,35 +111,115 @@
         </table>
       </div>
       <div id="emptyState" class="hidden p-8 text-center text-slate-400 text-xs">
-        ไม่พบข้อมูล
+        ไม่พบข้อมูลตามเงื่อนไขที่เลือก
+      </div>
+      <div id="errorState" class="hidden p-8 text-center text-red-500 text-xs space-y-2">
+        <p id="errorMessage">ไม่สามารถดึงข้อมูลจาก Google Sheet ได้</p>
+        <button onclick="fetchSheetData()" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs">ลองใหม่อีกครั้ง</button>
       </div>
     </div>
   </main>
 
+  <div id="columnModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+          <i data-lucide="columns" class="w-4 h-4 text-blue-600"></i> เลือกคอลัมน์ที่ต้องการซ่อน/แสดง
+        </h3>
+        <button onclick="toggleColumnModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto text-xs" id="columnCheckboxes">
+        <!-- Checkboxes populated via JS -->
+      </div>
+      <div class="flex justify-end pt-3 border-t border-slate-100">
+        <button onclick="toggleColumnModal()" class="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-xs font-medium transition">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwpIga61uRTPrrHjRkB8MPK0mp_b1CNS-7M_c_p1NFz5js0eaF5-7o8Irsgjw6LsK0/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyA8MiE0M0S900ps0SxdpheJdm52P35v7N4eDLhcSe68f2bNvbR0EnjaVykfmpROIza/exec";
     let rawData = [];
+    const columnNames = [
+      "ลำดับ", "Location", "วันซื้อเข้า", "ยี่ห้อ", "รุ่น", "รุ่นย่อย", 
+      "สี", "ทะเบียน", "ทะเบียนขาย", "เครื่องยนต์", "ปีผลิต", 
+      "ปีจด", "ไมล์", "ประวัติรถ", "สถานะ", "การรับประกัน"
+    ];
+    let hiddenColumns = new Set();
 
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
+      initColumnCheckboxes();
       fetchSheetData();
     });
 
+    function initColumnCheckboxes() {
+      const container = document.getElementById('columnCheckboxes');
+      container.innerHTML = '';
+      columnNames.forEach((name, idx) => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center space-x-2 cursor-pointer p-1 hover:bg-slate-50 rounded';
+        label.innerHTML = `
+          <input type="checkbox" checked onchange="toggleColumnVisibility(${idx}, this.checked)" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4">
+          <span class="text-slate-700">${name}</span>
+        `;
+        container.appendChild(label);
+      });
+    }
+
+    function toggleColumnVisibility(colIndex, isVisible) {
+      if (isVisible) {
+        hiddenColumns.delete(colIndex);
+      } else {
+        hiddenColumns.add(colIndex);
+      }
+      applyColumnVisibilityToDOM();
+    }
+
+    function applyColumnVisibilityToDOM() {
+      const table = document.querySelector('table');
+      const rows = table.querySelectorAll('tr');
+      rows.forEach(row => {
+        const cells = row.children;
+        Array.from(cells).forEach((cell, idx) => {
+          if (hiddenColumns.has(idx)) {
+            cell.classList.add('hidden');
+          } else {
+            cell.classList.remove('hidden');
+          }
+        });
+      });
+    }
+
+    function toggleColumnModal() {
+      const modal = document.getElementById('columnModal');
+      modal.classList.toggle('hidden');
+    }
+
     async function fetchSheetData() {
       const refreshIcon = document.getElementById('refreshIcon');
+      const errorState = document.getElementById('errorState');
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
+      if (errorState) errorState.classList.add('hidden');
 
       try {
         const res = await fetch(SCRIPT_URL);
         const json = await res.json();
         if (json && json.status === 'success' && Array.isArray(json.data)) {
           rawData = json.data;
-          renderTable(rawData);
-          document.getElementById('totalCount').textContent = rawData.length;
+          handleFilter();
           document.getElementById('lastUpdated').textContent = `อัปเดตล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
+        } else {
+          throw new Error(json.message || 'โครงสร้างข้อมูลไม่ถูกต้อง');
         }
       } catch (err) {
         console.error("Fetch Error:", err);
+        document.getElementById('errorMessage').textContent = `เกิดข้อผิดพลาด: ${err.message || 'ไม่สามารถเชื่อมต่อได้'}`;
+        document.getElementById('errorState').classList.remove('hidden');
       } finally {
         if (refreshIcon) refreshIcon.classList.remove('animate-spin');
       }
@@ -133,6 +235,55 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwpIga61uRTPrrHjRkB8
         }
       }
       return '-';
+    }
+
+    function formatDateToDDMMYYYY(dateInput) {
+      if (!dateInput || dateInput === '-') return '-';
+      
+      // If already formatted or string
+      let d = new Date(dateInput);
+      if (isNaN(d.getTime())) {
+        // try parsing dd/mm/yyyy or yyyy-mm-dd
+        const str = String(dateInput).trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+          const parts = str.split('T')[0].split('-');
+          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return str;
+      }
+
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    function handleFilter() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const statusVal = document.getElementById('statusFilter').value;
+      const maxMileage = document.getElementById('maxMileageFilter').value;
+
+      const filtered = rawData.filter(row => {
+        const matchesQuery = !query || Object.values(row).some(v => String(v).toLowerCase().includes(query));
+        const rowStatus = String(getVal(row, ['สถานะ'])).trim();
+        const matchesStatus = !statusVal || rowStatus === statusVal;
+
+        let matchesMileage = true;
+        if (maxMileage) {
+          const mileageStr = String(getVal(row, ['ไมล์', 'เลขไมล์'])).replace(/,/g, '').trim();
+          const mileageNum = parseFloat(mileageStr);
+          if (!isNaN(mileageNum)) {
+            matchesMileage = mileageNum <= parseFloat(maxMileage);
+          } else {
+            matchesMileage = false;
+          }
+        }
+
+        return matchesQuery && matchesStatus && matchesMileage;
+      });
+
+      renderTable(filtered);
+      document.getElementById('totalCount').textContent = filtered.length;
     }
 
     function renderTable(data) {
@@ -152,7 +303,8 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwpIga61uRTPrrHjRkB8
         tr.className = index % 2 === 0 ? 'bg-white hover:bg-blue-50/50' : 'bg-slate-50/50 hover:bg-blue-50/50';
 
         const locationVal = getVal(row, ['Location', 'สถานที่']);
-        const buyDate = getVal(row, ['วันซื้อเข้า', 'วันซื้อ']);
+        const rawBuyDate = getVal(row, ['วันซื้อเข้า', 'วันซื้อ']);
+        const buyDate = formatDateToDDMMYYYY(rawBuyDate);
         const brand = getVal(row, ['ยี่ห้อ']);
         const model = getVal(row, ['รุ่น']);
         const subModel = getVal(row, ['รุ่นย่อย']);
@@ -167,24 +319,32 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwpIga61uRTPrrHjRkB8
         const status = getVal(row, ['สถานะ']);
         const warranty = getVal(row, ['การรับประกัน', 'ประกัน']);
 
-        // Format Status Badge
+        let locationBgClass = 'text-slate-700 font-medium';
+        const locTrim = String(locationVal).trim();
+        if (locTrim === 'Carbutler X (คาร์บัตเลอร์ เอ็กซ์) ถนนกาญจนาภิเษก') {
+          locationBgClass = 'bg-sky-50 text-sky-900 font-medium';
+        } else if (locTrim === 'Car Butler สาขาเลียบด่วน') {
+          locationBgClass = 'bg-orange-50 text-orange-900 font-medium';
+        }
+
         let statusBadgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
         if (status === 'วางขาย') statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
         if (status === 'จอง') statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
 
         tr.innerHTML = `
-          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">${locationVal}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-500">${index + 1}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 ${locationBgClass}">${locationVal}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${buyDate}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 font-semibold text-slate-800">${brand}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 font-medium text-blue-900">${model}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${subModel}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${color}</td>
-          <td class="py-2.5 px-3 border-r border-slate-200 font-bold text-blue-700">${license}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-700">${license}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${salesLicense}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${engine}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${prodYear}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${regYear}</td>
-          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">${mileage !== '-' ? Number(mileage.replace(/,/g, '')).toLocaleString() : '-'}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">${mileage !== '-' ? Number(String(mileage).replace(/,/g, '')).toLocaleString() : '-'}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600 max-w-xs truncate" title="${history}">${history}</td>
           <td class="py-2.5 px-3 border-r border-slate-200">
             <span class="px-2 py-0.5 rounded text-[11px] font-semibold border ${statusBadgeClass}">${status}</span>
@@ -193,19 +353,9 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwpIga61uRTPrrHjRkB8
         `;
         tbody.appendChild(tr);
       });
-      lucide.createIcons();
-    }
 
-    function handleSearch() {
-      const q = document.getElementById('searchInput').value.toLowerCase().trim();
-      if (!q) {
-        renderTable(rawData);
-        return;
-      }
-      const filtered = rawData.filter(row => {
-        return Object.values(row).some(v => String(v).toLowerCase().includes(q));
-      });
-      renderTable(filtered);
+      applyColumnVisibilityToDOM();
+      lucide.createIcons();
     }
   </script>
 </body>
