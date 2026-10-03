@@ -3,552 +3,209 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบคลังและเช็คสถานะรถยนต์ (AutoStatus Fleet)</title>
-  <!-- Tailwind CSS CDN -->
+  <title>ระบบคลังรถยนต์ - ตารางตรงตาม Google Sheet</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Google Fonts Prompt -->
+  <!-- Google Font Prompt -->
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Prompt', sans-serif;
-    }
+    body { font-family: 'Prompt', sans-serif; }
+    th, td { whitespace: nowrap; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-  <!-- Header / Navigation -->
-  <header class="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white shadow-md sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <!-- Header Bar -->
+  <header class="bg-blue-900 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-[98%] mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="bg-blue-600/50 p-2 rounded-lg border border-blue-400/30">
+        <div class="bg-blue-800 p-2 rounded-lg border border-blue-700">
           <i data-lucide="car" class="w-6 h-6 text-blue-200"></i>
         </div>
         <div>
-          <h1 class="font-bold text-lg leading-tight tracking-wide">AutoStatus Fleet Tracker</h1>
-          <p class="text-xs text-blue-200">ระบบคลังและเช็คสถานะรถยนต์ (โทนขาว-น้ำเงิน)</p>
+          <h1 class="font-bold text-lg leading-tight">AutoStatus Fleet Tracker</h1>
+          <p class="text-xs text-blue-200">แสดงผลคอลัมน์ตรงตาม Google Sheet (G - U)</p>
         </div>
       </div>
       <div class="flex items-center space-x-3">
-        <button onclick="fetchSheetData()" class="flex items-center space-x-1.5 bg-blue-700/60 hover:bg-blue-600 text-blue-100 px-3 py-1.5 rounded-lg text-sm transition font-medium border border-blue-500/30">
+        <button onclick="fetchSheetData()" class="flex items-center space-x-1.5 bg-blue-800 hover:bg-blue-700 text-blue-100 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-blue-600">
           <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
-          <span>ดึงข้อมูลล่าสุด</span>
-        </button>
-        <button onclick="openConfigModal()" class="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition shadow-sm">
-          <i data-lucide="plug" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">เชื่อมต่อ Google Sheet</span>
+          <span>รีเฟรชข้อมูล</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Content Area -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <!-- Main Content -->
+  <main class="flex-1 max-w-[98%] w-full mx-auto px-2 sm:px-4 py-4 space-y-4">
 
-    <!-- Metrics Cards (3 Cards) -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-slate-500">จำนวนรถทั้งหมด</p>
-          <h3 class="text-3xl font-bold text-slate-800 mt-1" id="totalCarsCount">0</h3>
-          <p class="text-xs text-blue-600 mt-1 font-medium">คันในระบบ</p>
-        </div>
-        <div class="w-12 h-12 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center border border-blue-100">
-          <i data-lucide="warehouse" class="w-6 h-6"></i>
-        </div>
+    <!-- Search Bar & Stats -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div class="relative w-full md:w-96">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input 
+          type="text" 
+          id="searchInput" 
+          oninput="handleSearch()" 
+          placeholder="ค้นหาข้อมูลทุกคอลัมน์..." 
+          class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+        >
       </div>
-
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-slate-500">พร้อมวางขาย</p>
-          <h3 class="text-3xl font-bold text-emerald-600 mt-1" id="availableCarsCount">0</h3>
-          <p class="text-xs text-emerald-600 mt-1 font-medium">พร้อมส่งมอบ</p>
-        </div>
-        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100">
-          <i data-lucide="check-circle-2" class="w-6 h-6"></i>
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-slate-500">ติดจอง</p>
-          <h3 class="text-3xl font-bold text-amber-600 mt-1" id="reservedCarsCount">0</h3>
-          <p class="text-xs text-amber-600 mt-1 font-medium">รอดำเนินการ</p>
-        </div>
-        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center border border-amber-100">
-          <i data-lucide="clock" class="w-6 h-6"></i>
-        </div>
+      <div class="flex items-center space-x-4 text-xs font-medium text-slate-600">
+        <span>จำนวนทั้งหมด: <strong class="text-blue-900 text-sm" id="totalCount">0</strong> คัน</span>
+        <span>|</span>
+        <span id="lastUpdated">อัปเดตล่าสุด: -</span>
       </div>
     </div>
 
-    <!-- Search & Filter Controls -->
-    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
-      <div class="flex flex-col md:flex-row gap-3">
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input 
-            type="text" 
-            id="searchInput"
-            oninput="handleSearch()"
-            placeholder="ค้นหาด้วย เลขทะเบียน, ยี่ห้อ/รุ่น, Location/สาขา, สี, สถานะ หรือ ทะเบียนขาย..." 
-            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition"
-          >
-        </div>
-        <div class="flex items-center space-x-2 overflow-x-auto pb-1 md:pb-0">
-          <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">สถานะ:</span>
-          <button onclick="setFilterStatus('ALL')" id="filterBtnALL" class="px-3 py-1.5 text-xs font-medium rounded-lg transition bg-blue-700 text-white">ทั้งหมด</button>
-          <button onclick="setFilterStatus('วางขาย')" id="filterBtnวางขาย" class="px-3 py-1.5 text-xs font-medium rounded-lg transition bg-slate-100 text-slate-600 hover:bg-slate-200">วางขาย</button>
-          <button onclick="setFilterStatus('จอง')" id="filterBtnจอง" class="px-3 py-1.5 text-xs font-medium rounded-lg transition bg-slate-100 text-slate-600 hover:bg-slate-200">ติดจอง</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Inventory Table Container -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-      <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 class="font-bold text-slate-800 flex items-center space-x-2">
-          <i data-lucide="list-filter" class="w-5 h-5 text-blue-700"></i>
-          <span>รายการรถยนต์ทั้งหมดในคลัง (<span id="showingCount">0</span> คัน)</span>
-        </h2>
-        <div class="text-xs text-slate-400" id="lastUpdatedText">
-          ดึงข้อมูลอัตโนมัติ
-        </div>
-      </div>
-
+    <!-- Table Container -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm border-collapse">
+        <table class="w-full text-left text-xs border-collapse">
           <thead>
-            <tr class="bg-slate-50/80 text-slate-600 border-b border-slate-200 text-xs uppercase tracking-wider font-semibold">
-              <th class="py-3.5 px-4">วันซื้อเข้า</th>
-              <th class="py-3.5 px-4">ยี่ห้อ / รุ่น / รุ่นย่อย</th>
-              <th class="py-3.5 px-4">ทะเบียน / ทะเบียนขาย</th>
-              <th class="py-3.5 px-4">LOCATION</th>
-              <th class="py-3.5 px-4">สี / เครื่องยนต์</th>
-              <th class="py-3.5 px-4">ปีผลิต/จด</th>
-              <th class="py-3.5 px-4">เลขไมล์</th>
-              <th class="py-3.5 px-4">สถานะ</th>
-              <th class="py-3.5 px-4">ประวัติ / ประกัน</th>
+            <tr class="bg-blue-900 text-white font-semibold border-b border-blue-950">
+              <th class="py-3 px-3 border-r border-blue-800">Location</th>
+              <th class="py-3 px-3 border-r border-blue-800">วันซื้อเข้า</th>
+              <th class="py-3 px-3 border-r border-blue-800">ยี่ห้อ</th>
+              <th class="py-3 px-3 border-r border-blue-800">รุ่น</th>
+              <th class="py-3 px-3 border-r border-blue-800">รุ่นย่อย</th>
+              <th class="py-3 px-3 border-r border-blue-800">สี</th>
+              <th class="py-3 px-3 border-r border-blue-800">ทะเบียน</th>
+              <th class="py-3 px-3 border-r border-blue-800">ทะเบียนขาย</th>
+              <th class="py-3 px-3 border-r border-blue-800">เครื่องยนต์</th>
+              <th class="py-3 px-3 border-r border-blue-800">ปีผลิต</th>
+              <th class="py-3 px-3 border-r border-blue-800">ปีจด</th>
+              <th class="py-3 px-3 border-r border-blue-800">ไมล์</th>
+              <th class="py-3 px-3 border-r border-blue-800">ประวัติรถ</th>
+              <th class="py-3 px-3 border-r border-blue-800">สถานะ</th>
+              <th class="py-3 px-3">การรับประกัน</th>
             </tr>
           </thead>
-          <tbody id="carTableBody" class="divide-y divide-slate-100">
-            <!-- Table rows will be rendered here via JS -->
+          <tbody id="tableBody" class="divide-y divide-slate-100">
+            <!-- Data Rows -->
           </tbody>
         </table>
       </div>
-
-      <!-- Empty State -->
-      <div id="emptyState" class="hidden p-12 text-center">
-        <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
-          <i data-lucide="search-x" class="w-8 h-8"></i>
-        </div>
-        <h4 class="font-bold text-slate-700">ไม่พบข้อมูลรถยนต์ที่ค้นหา</h4>
-        <p class="text-xs text-slate-400 mt-1">ลองเปลี่ยนคำค้นหา หรือรีเซ็ตตัวกรองสถานะ</p>
+      <div id="emptyState" class="hidden p-8 text-center text-slate-400 text-xs">
+        ไม่พบข้อมูล
       </div>
     </div>
   </main>
 
-  <!-- Modal Detail View -->
-  <div id="detailModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-slate-100">
-      <div class="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100">
-            <i data-lucide="car" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-slate-800 text-base" id="modalTitle">รายละเอียดรถยนต์</h3>
-            <p class="text-xs text-slate-400" id="modalSubTitle">ทะเบียน -</p>
-          </div>
-        </div>
-        <button onclick="closeDetailModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="p-6 space-y-6">
-        <!-- Status & Location Banner -->
-        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span class="text-xs text-slate-400 font-medium">สถานที่จัดเก็บ (Location)</span>
-            <p class="font-semibold text-slate-800 flex items-center space-x-1.5 mt-0.5" id="modalLocation">
-              <i data-lucide="map-pin" class="w-4 h-4 text-blue-600"></i>
-              <span>-</span>
-            </p>
-          </div>
-          <div>
-            <span class="text-xs text-slate-400 font-medium">สถานะปัจจุบัน</span>
-            <div id="modalStatusBadge" class="mt-0.5">
-              <!-- Badge rendered via JS -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Specifications Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-            <p class="text-xs text-slate-400">วันซื้อเข้า</p>
-            <p class="font-medium text-slate-700 mt-1" id="modalPurchaseDate">-</p>
-          </div>
-          <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-            <p class="text-xs text-slate-400">ยี่ห้อ / รุ่น / รุ่นย่อย</p>
-            <p class="font-medium text-slate-700 mt-1" id="modalModelSpecs">-</p>
-          </div>
-          <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-            <p class="text-xs text-slate-400">สีตัวรถ</p>
-            <p class="font-medium text-slate-700 mt-1" id="modalColor">-</p>
-          </div>
-          <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-            <p class="text-xs text-slate-400">เลขทะเบียน / ขาย</p>
-            <p class="font-medium text-slate-700 mt-1" id="modalLicense">-</p>
-          </div>
-          <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-            <p class="text-xs text-slate-400">ขนาดเครื่องยนต์</p>
-            <p class="font-medium text-slate-700 mt-1" id="modalEngine">-</p>
-          </div>
-          <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-            <p class="text-xs text-slate-400">ปีผลิต / ปีจด</p>
-            <p class="font-medium text-slate-700 mt-1" id="modalYears">-</p>
-          </div>
-          <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-            <p class="text-xs text-slate-400">เลขไมล์</p>
-            <p class="font-medium text-slate-700 mt-1" id="modalMileage">-</p>
-          </div>
-          <div class="p-3 bg-slate-50/60 rounded-xl border border-slate-100">
-            <p class="text-xs text-slate-400">การรับประกัน</p>
-            <p class="font-medium text-slate-700 mt-1" id="modalWarranty">-</p>
-          </div>
-        </div>
-
-        <!-- History -->
-        <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-100">
-          <p class="text-xs text-slate-400 font-medium mb-1">ประวัติรถยนต์</p>
-          <p class="text-sm text-slate-700 leading-relaxed" id="modalHistory">-</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Apps Script Settings Modal -->
-  <div id="configModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-        <h3 class="font-bold text-slate-800 text-base">ตั้งค่าการเชื่อมต่อ Google Sheet Web App</h3>
-        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <div class="py-4 space-y-3">
-        <label class="block text-xs font-semibold text-slate-600">Google Apps Script Web App URL</label>
-        <input 
-          type="url" 
-          id="scriptUrlInput"
-          placeholder="https://script.google.com/macros/s/.../exec"
-          class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
-        >
-        <p class="text-xs text-slate-400">นำ Web App URL จากการ Deploy ใน Google Apps Script มาวางเพื่อเชื่อมต่อข้อมูลสด</p>
-      </div>
-      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
-        <button onclick="closeConfigModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">ยกเลิก</button>
-        <button onclick="saveConfigUrl()" class="px-4 py-2 text-xs font-medium bg-blue-700 hover:bg-blue-600 text-white rounded-lg transition shadow-sm">บันทึกการเชื่อมต่อ</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // ----------------------------------------------------
-    // Configuration & State Management
-    // ----------------------------------------------------
-    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxiqJPvcvzuCXWD2WiOfC9-YRUaucRBhfqcUb4W2rwlXOY8sk6rfHPco2BAEtQdqOSp/exec";
-    
-    let state = {
-      cars: [],
-      filteredCars: [],
-      activeFilterStatus: 'ALL',
-      searchQuery: '',
-      scriptUrl: localStorage.getItem('auto_status_script_url') || DEFAULT_SCRIPT_URL
-    };
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwpIga61uRTPrrHjRkB8MPK0mp_b1CNS-7M_c_p1NFz5js0eaF5-7o8Irsgjw6LsK0/exec";
+    let rawData = [];
 
-    // ----------------------------------------------------
-    // Initialize Application
-    // ----------------------------------------------------
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
-      document.getElementById('scriptUrlInput').value = state.scriptUrl;
       fetchSheetData();
     });
 
-    // ----------------------------------------------------
-    // Data Fetching Logic (Google Apps Script API)
-    // ----------------------------------------------------
     async function fetchSheetData() {
       const refreshIcon = document.getElementById('refreshIcon');
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
 
       try {
-        const response = await fetch(state.scriptUrl);
-        const result = await response.json();
-
-        if (result && result.status === 'success' && Array.isArray(result.data)) {
-          state.cars = normalizeCarData(result.data);
-          updateLastUpdated();
-        } else {
-          console.warn('Google Sheet Data Error, loading fallback data.');
+        const res = await fetch(SCRIPT_URL);
+        const json = await res.json();
+        if (json && json.status === 'success' && Array.isArray(json.data)) {
+          rawData = json.data;
+          renderTable(rawData);
+          document.getElementById('totalCount').textContent = rawData.length;
+          document.getElementById('lastUpdated').textContent = `อัปเดตล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
         }
       } catch (err) {
-        console.error('Fetch error:', err);
+        console.error("Fetch Error:", err);
       } finally {
         if (refreshIcon) refreshIcon.classList.remove('animate-spin');
-        applyFiltersAndRender();
       }
     }
 
-    // Smart Key Extraction (Matching Column G Location and Header Names)
-    function getVal(row, keys) {
-      if (!row) return '';
-      const rowKeys = Object.keys(row);
-      
-      for (const targetKey of keys) {
-        // Direct match
-        if (row[targetKey] !== undefined && row[targetKey] !== '') {
-          return row[targetKey];
-        }
-        // Trimmed match
-        const found = rowKeys.find(k => k.trim().toLowerCase() === targetKey.trim().toLowerCase());
-        if (found && row[found] !== undefined && row[found] !== '') {
-          return row[found];
+    function getVal(row, possibleKeys) {
+      if (!row) return '-';
+      const keys = Object.keys(row);
+      for (const pKey of possibleKeys) {
+        const foundKey = keys.find(k => k.trim().toLowerCase() === pKey.trim().toLowerCase());
+        if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') {
+          return row[foundKey];
         }
       }
-      return '';
+      return '-';
     }
 
-    function normalizeCarData(rawArray) {
-      return rawArray.map((row, index) => {
-        // Precise location extraction from Column G or any location key
-        let locationVal = getVal(row, ['Location', 'Location ', 'location', 'สถานที่', 'สาขา']);
-        
-        // Fallback Scanner for location value if key is unmapped
-        if (!locationVal || locationVal === '-') {
-          for (const k in row) {
-            const v = String(row[k]);
-            if (v.includes('Carbutler') || v.includes('ถนน') || v.includes('สาขา')) {
-              locationVal = v;
-              break;
-            }
-          }
-        }
-
-        return {
-          id: index + 1,
-          location: locationVal || 'Carbutler ถนนกาญจนาภิเษก',
-          purchaseDate: getVal(row, ['วันซื้อเข้า', 'วันซื้อ']),
-          brand: getVal(row, ['ยี่ห้อ', 'Brand']),
-          model: getVal(row, ['รุ่น', 'Model']),
-          subModel: getVal(row, ['รุ่นย่อย', 'SubModel']),
-          color: getVal(row, ['สี', 'Color']),
-          licensePlate: getVal(row, ['ทะเบียน', 'เลขทะเบียน']),
-          salesLicensePlate: getVal(row, ['ทะเบียนขาย', 'ทะเบียน ขาย']),
-          engine: getVal(row, ['เครื่องยนต์', 'Engine']),
-          prodYear: getVal(row, ['ปีผลิต']),
-          regYear: getVal(row, ['ปีจด']),
-          mileage: getVal(row, ['ไมล์', 'เลขไมล์']),
-          history: getVal(row, ['ประวัติรถ', 'ประวัติ']),
-          status: getVal(row, ['สถานะ', 'Status']) || 'วางขาย',
-          warranty: getVal(row, ['การรับประกัน', 'ประกัน']) || '30 Days'
-        };
-      });
-    }
-
-    // ----------------------------------------------------
-    // Filtering & Search
-    // ----------------------------------------------------
-    function applyFiltersAndRender() {
-      const query = state.searchQuery.toLowerCase().trim();
-
-      state.filteredCars = state.cars.filter(car => {
-        // Status Filter
-        if (state.activeFilterStatus !== 'ALL') {
-          if (car.status !== state.activeFilterStatus) return false;
-        }
-
-        // Search Query
-        if (!query) return true;
-
-        const matchField = (val) => String(val || '').toLowerCase().includes(query);
-
-        return (
-          matchField(car.licensePlate) ||
-          matchField(car.salesLicensePlate) ||
-          matchField(car.brand) ||
-          matchField(car.model) ||
-          matchField(car.subModel) ||
-          matchField(car.location) ||
-          matchField(car.color) ||
-          matchField(car.status)
-        );
-      });
-
-      renderMetrics();
-      renderTable();
-    }
-
-    function handleSearch() {
-      state.searchQuery = document.getElementById('searchInput').value;
-      applyFiltersAndRender();
-    }
-
-    function setFilterStatus(status) {
-      state.activeFilterStatus = status;
-
-      ['ALL', 'วางขาย', 'จอง'].forEach(s => {
-        const btn = document.getElementById(`filterBtn${s}`);
-        if (!btn) return;
-        if (s === status) {
-          btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg transition bg-blue-700 text-white shadow-sm';
-        } else {
-          btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg transition bg-slate-100 text-slate-600 hover:bg-slate-200';
-        }
-      });
-
-      applyFiltersAndRender();
-    }
-
-    // ----------------------------------------------------
-    // UI Rendering
-    // ----------------------------------------------------
-    function renderMetrics() {
-      const total = state.cars.length;
-      const available = state.cars.filter(c => c.status === 'วางขาย').length;
-      const reserved = state.cars.filter(c => c.status === 'จอง').length;
-
-      document.getElementById('totalCarsCount').textContent = total.toLocaleString();
-      document.getElementById('availableCarsCount').textContent = available.toLocaleString();
-      document.getElementById('reservedCarsCount').textContent = reserved.toLocaleString();
-      document.getElementById('showingCount').textContent = state.filteredCars.length.toLocaleString();
-    }
-
-    function renderTable() {
-      const tbody = document.getElementById('carTableBody');
+    function renderTable(data) {
+      const tbody = document.getElementById('tableBody');
       const emptyState = document.getElementById('emptyState');
       tbody.innerHTML = '';
 
-      if (state.filteredCars.length === 0) {
+      if (data.length === 0) {
         emptyState.classList.remove('hidden');
         return;
       } else {
         emptyState.classList.add('hidden');
       }
 
-      state.filteredCars.forEach(car => {
+      data.forEach((row, index) => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50/80 cursor-pointer transition border-b border-slate-100/80';
-        tr.onclick = () => openDetailModal(car);
+        tr.className = index % 2 === 0 ? 'bg-white hover:bg-blue-50/50' : 'bg-slate-50/50 hover:bg-blue-50/50';
 
-        // Status Badge Style
-        let statusBadgeClass = 'bg-slate-100 text-slate-600 border-slate-200';
-        if (car.status === 'วางขาย') {
-          statusBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
-        } else if (car.status === 'จอง') {
-          statusBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200/80';
-        }
+        const locationVal = getVal(row, ['Location', 'สถานที่']);
+        const buyDate = getVal(row, ['วันซื้อเข้า', 'วันซื้อ']);
+        const brand = getVal(row, ['ยี่ห้อ']);
+        const model = getVal(row, ['รุ่น']);
+        const subModel = getVal(row, ['รุ่นย่อย']);
+        const color = getVal(row, ['สี']);
+        const license = getVal(row, ['ทะเบียน']);
+        const salesLicense = getVal(row, ['ทะเบียนขาย']);
+        const engine = getVal(row, ['เครื่องยนต์']);
+        const prodYear = getVal(row, ['ปีผลิต']);
+        const regYear = getVal(row, ['ปีจด']);
+        const mileage = getVal(row, ['ไมล์', 'เลขไมล์']);
+        const history = getVal(row, ['ประวัติรถ', 'ประวัติ']);
+        const status = getVal(row, ['สถานะ']);
+        const warranty = getVal(row, ['การรับประกัน', 'ประกัน']);
+
+        // Format Status Badge
+        let statusBadgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+        if (status === 'วางขาย') statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        if (status === 'จอง') statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
 
         tr.innerHTML = `
-          <td class="py-3.5 px-4 text-slate-500 font-medium whitespace-nowrap text-xs">
-            ${car.purchaseDate || '-'}
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">${locationVal}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${buyDate}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 font-semibold text-slate-800">${brand}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 font-medium text-blue-900">${model}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${subModel}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${color}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 font-bold text-blue-700">${license}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${salesLicense}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${engine}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${prodYear}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${regYear}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">${mileage !== '-' ? Number(mileage.replace(/,/g, '')).toLocaleString() : '-'}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600 max-w-xs truncate" title="${history}">${history}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200">
+            <span class="px-2 py-0.5 rounded text-[11px] font-semibold border ${statusBadgeClass}">${status}</span>
           </td>
-          <td class="py-3.5 px-4">
-            <div class="font-bold text-slate-800 text-sm">${car.brand || ''} ${car.model || '-'}</div>
-            <div class="text-xs text-slate-400 mt-0.5">${car.subModel || ''}</div>
-          </td>
-          <td class="py-3.5 px-4">
-            <div class="font-semibold text-blue-700">${car.licensePlate || '-'}</div>
-            <div class="text-xs text-slate-400">ขาย: ${car.salesLicensePlate || '-'}</div>
-          </td>
-          <td class="py-3.5 px-4">
-            <div class="flex items-center space-x-1 text-slate-700 font-medium text-xs">
-              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-600 flex-shrink-0"></i>
-              <span class="truncate max-w-[150px]" title="${car.location}">${car.location || '-'}</span>
-            </div>
-          </td>
-          <td class="py-3.5 px-4">
-            <div class="text-slate-700 font-medium text-xs">สี${car.color || '-'}</div>
-            <div class="text-xs text-slate-400">${car.engine || '-'}</div>
-          </td>
-          <td class="py-3.5 px-4 text-xs font-medium text-slate-600">
-            ${car.prodYear || '-'}/${car.regYear || '-'}
-          </td>
-          <td class="py-3.5 px-4 text-xs font-semibold text-slate-700">
-            ${car.mileage ? Number(car.mileage).toLocaleString() : '-'}
-          </td>
-          <td class="py-3.5 px-4">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${statusBadgeClass}">
-              ${car.status || 'วางขาย'}
-            </span>
-          </td>
-          <td class="py-3.5 px-4">
-            <div class="text-xs text-slate-600 max-w-[140px] truncate" title="${car.history}">${car.history || '-'}</div>
-            <div class="text-[11px] text-blue-600 font-medium mt-0.5">ประกัน: ${car.warranty || '-'}</div>
-          </td>
+          <td class="py-2.5 px-3 text-slate-600">${warranty}</td>
         `;
-
         tbody.appendChild(tr);
       });
-
       lucide.createIcons();
     }
 
-    // ----------------------------------------------------
-    // Modal Helpers
-    // ----------------------------------------------------
-    function openDetailModal(car) {
-      document.getElementById('modalTitle').textContent = `${car.brand || ''} ${car.model || ''} ${car.subModel || ''}`;
-      document.getElementById('modalSubTitle').textContent = `ทะเบียน: ${car.licensePlate || '-'} (ทะเบียนขาย: ${car.salesLicensePlate || '-'})`;
-      document.getElementById('modalLocation').querySelector('span').textContent = car.location || '-';
-      document.getElementById('modalPurchaseDate').textContent = car.purchaseDate || '-';
-      document.getElementById('modalModelSpecs').textContent = `${car.brand || ''} ${car.model || ''} ${car.subModel || ''}`;
-      document.getElementById('modalColor').textContent = car.color || '-';
-      document.getElementById('modalLicense').textContent = `${car.licensePlate || '-'} / ${car.salesLicensePlate || '-'}`;
-      document.getElementById('modalEngine').textContent = car.engine || '-';
-      document.getElementById('modalYears').textContent = `ผลิต: ${car.prodYear || '-'} / จด: ${car.regYear || '-'}`;
-      document.getElementById('modalMileage').textContent = car.mileage ? `${Number(car.mileage).toLocaleString()} กม.` : '-';
-      document.getElementById('modalWarranty').textContent = car.warranty || '-';
-      document.getElementById('modalHistory').textContent = car.history || 'ไม่มีข้อมูลประวัติเพิ่มเติม';
-
-      const statusContainer = document.getElementById('modalStatusBadge');
-      let statusClass = 'bg-slate-100 text-slate-700 border-slate-200';
-      if (car.status === 'วางขาย') statusClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      if (car.status === 'จอง') statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
-
-      statusContainer.innerHTML = `<span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold border ${statusClass}">${car.status || 'วางขาย'}</span>`;
-
-      document.getElementById('detailModal').classList.remove('hidden');
-    }
-
-    function closeDetailModal() {
-      document.getElementById('detailModal').classList.add('hidden');
-    }
-
-    function openConfigModal() {
-      document.getElementById('configModal').classList.remove('hidden');
-    }
-
-    function closeConfigModal() {
-      document.getElementById('configModal').classList.add('hidden');
-    }
-
-    function saveConfigUrl() {
-      const url = document.getElementById('scriptUrlInput').value.trim();
-      if (url) {
-        state.scriptUrl = url;
-        localStorage.setItem('auto_status_script_url', url);
-        closeConfigModal();
-        fetchSheetData();
+    function handleSearch() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      if (!q) {
+        renderTable(rawData);
+        return;
       }
-    }
-
-    function updateLastUpdated() {
-      const now = new Date();
-      document.getElementById('lastUpdatedText').textContent = `อัปเดตล่าสุด: ${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
+      const filtered = rawData.filter(row => {
+        return Object.values(row).some(v => String(v).toLowerCase().includes(q));
+      });
+      renderTable(filtered);
     }
   </script>
 </body>
