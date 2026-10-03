@@ -25,12 +25,12 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight">นายหน้าส่วนตัว น๊อป Carbutler</h1>
-          <p class="text-xs text-blue-200"><</p>
+          <p class="text-xs text-blue-200">♥</p>
         </div>
       </div>
       <div class="flex items-center space-x-3">
-        <button onclick="fetchSheetData()" class="flex items-center space-x-1.5 bg-blue-800 hover:bg-blue-700 text-blue-100 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-blue-600">
-          <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
+        <button onclick="fetchSheetData()" class="flex items-center space-x-1.5 bg-blue-800 hover:bg-blue-700 text-blue-100 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-blue-600 shadow-sm active:scale-95">
+          <i data-lucide="refresh-cw" class="w-4 h-4 text-blue-200"></i>
           <span>รีเฟรชข้อมูล</span>
         </button>
       </div>
@@ -201,9 +201,7 @@
     }
 
     async function fetchSheetData() {
-      const refreshIcon = document.getElementById('refreshIcon');
       const errorState = document.getElementById('errorState');
-      if (refreshIcon) refreshIcon.classList.add('animate-spin');
       if (errorState) errorState.classList.add('hidden');
 
       try {
@@ -212,7 +210,11 @@
         if (json && json.status === 'success' && Array.isArray(json.data)) {
           rawData = json.data;
           handleFilter();
-          document.getElementById('lastUpdated').textContent = `อัปเดตล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
+          
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('th-TH');
+          const timeStr = now.toLocaleTimeString('th-TH');
+          document.getElementById('lastUpdated').textContent = `อัปเดตล่าสุด: ${dateStr}, ${timeStr}`;
         } else {
           throw new Error(json.message || 'โครงสร้างข้อมูลไม่ถูกต้อง');
         }
@@ -220,8 +222,6 @@
         console.error("Fetch Error:", err);
         document.getElementById('errorMessage').textContent = `เกิดข้อผิดพลาด: ${err.message || 'ไม่สามารถเชื่อมต่อได้'}`;
         document.getElementById('errorState').classList.remove('hidden');
-      } finally {
-        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
       }
     }
 
@@ -240,10 +240,8 @@
     function formatDateToDDMMYYYY(dateInput) {
       if (!dateInput || dateInput === '-') return '-';
       
-      // If already formatted or string
       let d = new Date(dateInput);
       if (isNaN(d.getTime())) {
-        // try parsing dd/mm/yyyy or yyyy-mm-dd
         const str = String(dateInput).trim();
         if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
           const parts = str.split('T')[0].split('-');
