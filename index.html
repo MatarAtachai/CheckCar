@@ -89,19 +89,19 @@
             <tr class="bg-blue-900 text-white font-semibold border-b border-blue-950">
               <th data-col="0" class="py-3 px-3 border-r border-blue-800 text-center w-12">ลำดับ</th>
               <th data-col="1" class="py-3 px-3 border-r border-blue-800">สถานะ</th>
-              <th data-col="2" class="py-3 px-3 border-r border-blue-800">Location</th>
-              <th data-col="3" class="py-3 px-3 border-r border-blue-800">การรับประกัน</th>
-              <th data-col="4" class="py-3 px-3 border-r border-blue-800">ยี่ห้อ</th>
-              <th data-col="5" class="py-3 px-3 border-r border-blue-800">รุ่น</th>
-              <th data-col="6" class="py-3 px-3 border-r border-blue-800">รุ่นย่อย</th>
-              <th data-col="7" class="py-3 px-3 border-r border-blue-800">ปีผลิต</th>
-              <th data-col="8" class="py-3 px-3 border-r border-blue-800">ปีจด</th>
-              <th data-col="9" class="py-3 px-3 border-r border-blue-800">สี</th>
-              <th data-col="10" class="py-3 px-3 border-r border-blue-800">ทะเบียน</th>
-              <th data-col="11" class="py-3 px-3 border-r border-blue-800">ทะเบียนขาย</th>
-              <th data-col="12" class="py-3 px-3 border-r border-blue-800">เครื่องยนต์</th>
-              <th data-col="13" class="py-3 px-3 border-r border-blue-800">ไมล์</th>
-              <th data-col="14" class="py-3 px-3 border-r border-blue-800">ประวัติรถ</th>
+              <th data-col="2" class="py-3 px-3 border-r border-blue-800">ยี่ห้อ</th>
+              <th data-col="3" class="py-3 px-3 border-r border-blue-800">รุ่น</th>
+              <th data-col="4" class="py-3 px-3 border-r border-blue-800">รุ่นย่อย</th>
+              <th data-col="5" class="py-3 px-3 border-r border-blue-800">ปีผลิต</th>
+              <th data-col="6" class="py-3 px-3 border-r border-blue-800">ปีจด</th>
+              <th data-col="7" class="py-3 px-3 border-r border-blue-800">สี</th>
+              <th data-col="8" class="py-3 px-3 border-r border-blue-800">ทะเบียน</th>
+              <th data-col="9" class="py-3 px-3 border-r border-blue-800">ทะเบียนขาย</th>
+              <th data-col="10" class="py-3 px-3 border-r border-blue-800">เครื่องยนต์</th>
+              <th data-col="11" class="py-3 px-3 border-r border-blue-800">ไมล์</th>
+              <th data-col="12" class="py-3 px-3 border-r border-blue-800">ประวัติรถ</th>
+              <th data-col="13" class="py-3 px-3 border-r border-blue-800">Location</th>
+              <th data-col="14" class="py-3 px-3 border-r border-blue-800">การรับประกัน</th>
               <th data-col="15" class="py-3 px-3">วันซื้อเข้า</th>
             </tr>
           </thead>
@@ -145,8 +145,8 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyA8MiE0M0S900ps0SxdpheJdm52P35v7N4eDLhcSe68f2bNvbR0EnjaVykfmpROIza/exec";
     let rawData = [];
     const columnNames = [
-      "ลำดับ", "สถานะ", "Location", "การรับประกัน", "ยี่ห้อ", "รุ่น", "รุ่นย่อย", 
-      "ปีผลิต", "ปีจด", "สี", "ทะเบียน", "ทะเบียนขาย", "เครื่องยนต์", "ไมล์", "ประวัติรถ", "วันซื้อเข้า"
+      "ลำดับ", "สถานะ", "ยี่ห้อ", "รุ่น", "รุ่นย่อย", "ปีผลิต", "ปีจด", 
+      "สี", "ทะเบียน", "ทะเบียนขาย", "เครื่องยนต์", "ไมล์", "ประวัติรถ", "Location", "การรับประกัน", "วันซื้อเข้า"
     ];
     let hiddenColumns = new Set();
 
@@ -333,8 +333,6 @@
           <td class="py-2.5 px-3 border-r border-slate-200">
             <span class="px-2 py-0.5 rounded text-[11px] font-semibold border ${statusBadgeClass}">${status}</span>
           </td>
-          <td class="py-2.5 px-3 border-r border-slate-200 ${locationBgClass}">${locationVal}</td>
-          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${warranty}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 font-semibold text-slate-800">${brand}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 font-medium text-blue-900">${model}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${subModel}</td>
@@ -346,6 +344,8 @@
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${engine}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">${mileage !== '-' ? Number(String(mileage).replace(/,/g, '')).toLocaleString() : '-'}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600 max-w-xs truncate" title="${history}">${history}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 ${locationBgClass}">${locationVal}</td>
+          <td class="py-2.5 px-3 border-r border-slate-200 text-slate-600">${warranty}</td>
           <td class="py-2.5 px-3 text-slate-600">${buyDate}</td>
         `;
         tbody.appendChild(tr);
