@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบค้นหาข้อมูลสต็อกรถยนต์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-3 rounded-2xl backdrop-blur-sm">
+                    <i class="fa-solid fa-car-rear text-2xl text-blue-200"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">ระบบค้นหาข้อมูลสต็อกรถยนต์</h1>
+                    <p class="text-blue-200 text-sm">เชื่อมต่อข้อมูลแบบเรียลไทม์จาก Google Sheets</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleMockData()" id="mockToggleBtn" class="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-2 rounded-xl transition border border-white/20 cursor-pointer">
+                    <i class="fa-solid fa-shuffle mr-1"></i> สลับโหมดจำลอง/จริง
+                </button>
+                <div class="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm text-sm border border-white/10">
+                    <i class="fa-solid fa-database text-blue-300"></i>
+                    <span id="totalCount">กำลังเชื่อมต่อข้อมูล...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Search & Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2 relative">
+                    <label for="searchInput" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">ค้นหาข้อมูลทุกคอลัมน์</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="searchInput" placeholder="พิมพ์ยี่ห้อ, รุ่น, ทะเบียน, สี, หรือสถานะ..." 
+                            class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label for="statusFilter" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">กรองสถานะรถ</label>
+                    <select id="statusFilter" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm">
+                        <option value="">ทั้งหมดทุกสถานะ</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <!-- Loading State -->
+            <div id="loadingState" class="py-20 text-center">
+                <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent mb-4"></div>
+                <p class="text-slate-600 font-medium">กำลังดึงข้อมูลจาก Google Sheets...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="hidden py-16 text-center px-4">
+                <div class="text-amber-500 text-4xl mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <p class="text-slate-700 font-semibold mb-1 text-lg">ไม่สามารถเชื่อมต่อข้อมูลสดได้</p>
+                <p id="errorDetail" class="text-slate-500 text-sm max-w-xl mx-auto mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 font-mono text-left overflow-x-auto"></p>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <button onclick="fetchData()" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition shadow-sm cursor-pointer">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> ลองดึงใหม่อีกครั้ง
+                    </button>
+                    <button onclick="enableMockMode(true)" class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition shadow-sm cursor-pointer">
+                        <i class="fa-solid fa-eye mr-2"></i> ใช้ข้อมูลตัวอย่างเพื่อดูหน้าเว็บ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div id="tableContainer" class="hidden overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr id="tableHeader" class="bg-slate-100 text-slate-700 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100 text-sm text-slate-600">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden py-20 text-center">
+                <div class="text-slate-300 text-4xl mb-3"><i class="fa-solid fa-box-open"></i></div>
+                <p class="text-slate-700 font-medium">ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
+                <p class="text-slate-400 text-sm">ลองเปลี่ยนคำค้นหาใหม่อีกครั้ง</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Web App URL ใหม่ของคุณ
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwEPtnEfPzgu6IZsSha-SKWhND26mW74VKG3TyzOrOgZ5MUvEQDecf80RYFyFkpVbU/exec";
+
+        // หัวคอลัมน์ที่ตรงกับ Apps Script ใหม่
+        const TARGET_HEADERS = [
+            "วันซื้อเข้า", "ยี่ห้อ", "รุ่น", "รุ่นย่อย", "สี", 
+            "ทะเบียน", "ทะเบียนขาย", "เครื่องยนต์", "ปีผลิต", 
+            "ปีจด", "ไมล์", "ประวัติรถ", "สถานะ", "การรับประกัน"
+        ];
+
+        let allData = [];
+        let isMockMode = false;
+
+        const mockSampleData = [
+            {"วันซื้อเข้า": "4 ก.ย. 28", "ยี่ห้อ": "Benz", "รุ่น": "A200", "รุ่นย่อย": "AMG", "สี": "ดำ", "ทะเบียน": "2ชน2538", "ทะเบียนขาย": "2ชน2538", "เครื่องยนต์": "1.3 เบนซิน", "ปีผลิต": 2021, "ปีจด": 2022, "ไมล์": "120,000", "ประวัติรถ": "มือเดียว", "สถานะ": "วางขาย", "การรับประกัน": "30 Days"},
+            {"วันซื้อเข้า": "26 ก.ย. 28", "ยี่ห้อ": "BMW", "รุ่น": "220i", "รุ่นย่อย": "M Sport", "สี": "ขาว", "ทะเบียน": "ขจ3737", "ทะเบียนขาย": "สลับคัน", "เครื่องยนต์": "2.0 เบนซิน", "ปีผลิต": 2021, "ปีจด": 2021, "ไมล์": "64,000", "ประวัติรถ": "มือเดียว", "สถานะ": "วางขาย", "การรับประกัน": "30 Days"}
+        ];
+
+        async function fetchData() {
+            if (isMockMode) {
+                enableMockMode(true);
+                return;
+            }
+
+            const loading = document.getElementById('loadingState');
+            const error = document.getElementById('errorState');
+            const container = document.getElementById('tableContainer');
+            const empty = document.getElementById('emptyState');
+
+            loading.classList.remove('hidden');
+            error.classList.add('hidden');
+            container.classList.add('hidden');
+            empty.classList.add('hidden');
+
+            try {
+                const response = await fetch(WEB_APP_URL, { redirect: "follow" });
+                if (!response.ok) throw new Error(`HTTP Error status: ${response.status}`);
+                
+                const text = await response.text();
+                let json;
+                try {
+                    json = JSON.parse(text);
+                } catch (e) {
+                    throw new Error("Apps Script ไม่ได้ส่งคืนข้อมูลในรูปแบบ JSON (ตรวจสอบสิทธิ์ Anyone หรือ Deploy ใหม่)");
+                }
+
+                allData = json;
+                initApp();
+            } catch (err) {
+                console.error(err);
+                loading.classList.add('hidden');
+                error.classList.remove('hidden');
+                document.getElementById('errorDetail').innerText = err.message + "\n\n(คำแนะนำ: หากทดสอบแล้วติด CORS หรือสิทธิ์ สามารถกดปุ่ม 'ใช้ข้อมูลตัวอย่าง' เพื่อพรีวิวหน้าเว็บได้ทันที)";
+            }
+        }
+
+        function enableMockMode(setActive) {
+            isMockMode = setActive;
+            allData = mockSampleData;
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            initApp();
+            document.getElementById('totalCount').innerText = `แสดงข้อมูลตัวอย่าง (Mock Data)`;
+        }
+
+        function toggleMockData() {
+            isMockMode = !isMockMode;
+            if (isMockMode) {
+                enableMockMode(true);
+            } else {
+                fetchData();
+            }
+        }
+
+        function initApp() {
+            if (allData.length > 0) {
+                setupStatusFilterOptions();
+                renderTable(allData);
+                if (!isMockMode) {
+                    document.getElementById('totalCount').innerText = `พบข้อมูลทั้งหมด ${allData.length} คัน`;
+                }
+            } else {
+                document.getElementById('totalCount').innerText = `ไม่พบข้อมูลในระบบ`;
+            }
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('tableContainer').classList.remove('hidden');
+        }
+
+        function setupStatusFilterOptions() {
+            const statusFilter = document.getElementById('statusFilter');
+            const uniqueStatuses = [...new Set(allData.map(item => item["สถานะ"]).filter(Boolean))];
+            
+            statusFilter.innerHTML = '<option value="">ทั้งหมดทุกสถานะ</option>';
+            uniqueStatuses.forEach(status => {
+                const opt = document.createElement('option');
+                opt.value = status;
+                opt.innerText = status;
+                statusFilter.appendChild(opt);
+            });
+        }
+
+        function renderTable(data) {
+            const headerRow = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            const tableContainer = document.getElementById('tableContainer');
+
+            headerRow.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            if (data.length === 0) {
+                tableContainer.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                tableContainer.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+            }
+
+            // สร้างหัวตารางตาม TARGET_HEADERS
+            TARGET_HEADERS.forEach(header => {
+                const th = document.createElement('th');
+                th.className = "px-4 py-3.5 font-semibold whitespace-nowrap text-slate-700";
+                th.innerText = header;
+                headerRow.appendChild(th);
+            });
+
+            // สร้างแถวข้อมูล
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-none";
+                
+                TARGET_HEADERS.forEach(header => {
+                    const td = document.createElement('td');
+                    td.className = "px-4 py-3.5 whitespace-nowrap text-slate-700";
+                    
+                    let val = row[header] !== undefined && row[header] !== null ? row[header] : '';
+                    
+                    if (header === 'สถานะ') {
+                        let badgeColor = 'bg-slate-100 text-slate-700';
+                        if (String(val).includes('วางขาย')) badgeColor = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+                        else if (String(val).includes('จอง')) badgeColor = 'bg-amber-50 text-amber-700 border border-amber-200';
+                        else if (String(val).includes('ขายแล้ว')) badgeColor = 'bg-rose-50 text-rose-700 border border-rose-200';
+                        
+                        td.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-medium inline-block ${badgeColor}">${val || '-'}</span>`;
+                    } else {
+                        td.innerText = val;
+                    }
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function filterData() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+            const selectedStatus = document.getElementById('statusFilter').value;
+
+            const filtered = allData.filter(row => {
+                const matchStatus = !selectedStatus || String(row["สถานะ"]) === selectedStatus;
+                const matchKeyword = !keyword || Object.values(row).some(val => 
+                    String(val).toLowerCase().includes(keyword)
+                );
+                return matchStatus && matchKeyword;
+            });
+
+            renderTable(filtered);
+            if (!isMockMode) {
+                document.getElementById('totalCount').innerText = `แสดง ${filtered.length} จากทั้งหมด ${allData.length} คัน`;
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', filterData);
+        document.getElementById('statusFilter').addEventListener('change', filterData);
+
+        window.onload = fetchData;
+    </script>
+</body>
+</html>
